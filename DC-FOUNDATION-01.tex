@@ -1,0 +1,629 @@
+% =====================================================================
+%  DC-FOUNDATION-01 — Raspberry Pi Node Foundation
+%  Lab Execution Record & Meta Report  (P00 / P01 · BSA-conformant)
+%  Author: Redji Jean Baptiste (Toussaint)
+%  Compile:  pdflatex DC-FOUNDATION-01.tex   (run twice for ToC/refs)
+%
+%  IMAGE NOTE ---------------------------------------------------------
+%  Figures are referenced by their mapping-table names (fig-*.png).
+%  Rename the screenshots to those names and place them in ./evidence/
+%  (see the mapping table at the end of the source, or Appendix C).
+%  Any missing image will show a gray placeholder box, not an error,
+%  because we use \IfFileExists guards below.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amssymb}
+\usepackage[a4paper,margin=1in,headheight=14pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{float}
+\usepackage[hidelinks,colorlinks=true,linkcolor=dcred,urlcolor=dcblue,citecolor=dcblue]{hyperref}
+
+% ---- palette --------------------------------------------------------
+\definecolor{dcred}{RGB}{155,25,45}
+\definecolor{dcblue}{RGB}{20,80,140}
+\definecolor{dcgreen}{RGB}{20,120,60}
+\definecolor{dcgray}{RGB}{90,90,90}
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{consolebg}{RGB}{25,30,40}
+\definecolor{consolefg}{RGB}{225,225,225}
+\definecolor{okgreen}{RGB}{20,120,60}
+\definecolor{failred}{RGB}{170,30,30}
+\definecolor{warnamber}{RGB}{170,110,10}
+
+% ---- section styling ------------------------------------------------
+\titleformat{\section}{\Large\bfseries\color{dcred}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{dcblue}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{dcgray}}{\thesubsubsection}{0.6em}{}
+
+% ---- headers --------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small\textcolor{dcgray}{DC-FOUNDATION-01 · dc-node-01}}
+\rhead{\small\textcolor{dcgray}{\thepage}}
+\lfoot{\small\textcolor{dcgray}{BSA / P00 Foundation}}
+\rfoot{\small\textcolor{dcgray}{Redji Jean Baptiste}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ---- listings styles ------------------------------------------------
+\lstdefinestyle{bash}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{dcblue}\bfseries,
+  commentstyle=\color{dcgreen}\itshape,
+  breaklines=true, columns=fullflexible,
+  frame=single, rulecolor=\color{dcgray!40},
+  showstringspaces=false, xleftmargin=6pt, xrightmargin=6pt,
+  aboveskip=8pt, belowskip=8pt,
+  morekeywords={sudo,nmcli,ssh,scp,systemctl,apt,ufw,git,docker,timedatectl,chmod,cat,grep,ls}
+}
+\lstdefinestyle{console}{
+  backgroundcolor=\color{consolebg},
+  basicstyle=\ttfamily\footnotesize\color{consolefg},
+  breaklines=true, columns=fullflexible,
+  frame=single, rulecolor=\color{consolebg},
+  showstringspaces=false, xleftmargin=6pt, xrightmargin=6pt,
+  aboveskip=8pt, belowskip=8pt
+}
+\lstset{style=bash}
+
+% ---- helper macros --------------------------------------------------
+\graphicspath{{evidence/}{./}}
+
+% safe figure: shows a placeholder if the file is missing
+\newcommand{\evfig}[3]{% {filename}{width-fraction}{caption}
+  \begin{figure}[H]\centering
+  \IfFileExists{evidence/#1}{\includegraphics[width=#2\linewidth]{#1}}%
+  {\fbox{\parbox[c][3.2cm][c]{#2\linewidth}{\centering\ttfamily\small\textcolor{dcgray}{[ figure placeholder — supply \detokenize{#1} ]}}}}%
+  \caption{#3}\end{figure}}
+
+\newcommand{\pass}{\textcolor{okgreen}{\textbf{$\checkmark$ PASS}}}
+\newcommand{\fail}{\textcolor{failred}{\textbf{$\times$ FAIL}}}
+\newcommand{\open}{\textcolor{warnamber}{\textbf{OPEN}}}
+\newcommand{\closed}{\textcolor{okgreen}{\textbf{CLOSED}}}
+\newcommand{\bsl}[1]{\textcolor{dcred}{\textbf{BSL-#1}}}
+\newcommand{\domain}[1]{\textsc{#1}}
+
+\newcommand{\parttitle}[2]{%
+  \clearpage
+  \begin{center}
+  {\Huge\bfseries\color{dcred} #1}\\[4pt]
+  {\large\color{dcgray} #2}
+  \end{center}
+  \vspace{4pt}\hrule\vspace{10pt}}
+
+% =====================================================================
+\begin{document}
+
+% ---------------------------------------------------------------- TITLE
+\begin{titlepage}
+\centering
+\vspace*{1.2cm}
+{\LARGE\bfseries\color{dcred} DC-FOUNDATION-01}\\[6pt]
+{\Large Raspberry Pi Node Foundation}\\[4pt]
+{\large\itshape Lab Execution Record \& Meta Report}\\[18pt]
+\rule{0.7\linewidth}{0.8pt}\\[14pt]
+
+\begin{tabular}{rl}
+\textbf{Project ID}      & P00 (Foundation) — first executable of \textbf{P01, Jan–Apr 2026}\\
+\textbf{Node}            & \texttt{dc-node-01} \quad(D-Central node 01)\\
+\textbf{Platform}        & Raspberry Pi 5 Model B Rev 1.1 (8\,GB)\\
+\textbf{Operating system}& Raspberry Pi OS 64-bit — Debian 13 ``Trixie''\\
+\textbf{Kernel}          & 6.18.34+rpt-rpi-2712 (\texttt{arm64})\\
+\textbf{Author}          & Redji Jean Baptiste (Toussaint) — 041-269-022\\
+\textbf{Standard}        & Master Timeline V22 — Black Start Augmentation System\\
+\textbf{STDS layer}      & 0 — Userland (activates P01)\\
+\textbf{Build window}    & 2026-07-09 $\rightarrow$ 2026-07-22\\
+\end{tabular}\\[20pt]
+
+\fbox{\parbox{0.86\linewidth}{\centering
+\textbf{\color{okgreen} STATUS: COMPLETE.} Part A steps 0–12 executed, evidenced,
+and verified. SSH hardening proven by negative test. Reboot persistence confirmed.
+All nine defects (D1–D9) closed. Published to \texttt{RedjiJB/cst-portfolio}.}}\\[16pt]
+
+{\small\color{dcgray} Three-Track status: CL \pass\ $\rightarrow$ SL \pass\ $\rightarrow$ BSL \pass\ (rebuild demonstrated).
+Maturity attained: \bsl{1}, touching \bsl{2}.}
+
+\vfill
+{\small\color{dcgray} Companion research seed \textbf{T1.1} — \emph{Minimum Viable Sovereign
+Infrastructure Specification} $\rightarrow$ repo \texttt{Sovereign-Bootstrap-v1}.}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+% ================================================================= §0
+\section{Timeline Alignment — Conformance to the BSA Standard}
+This report is the first executed artifact of the Master Timeline V22. It is
+therefore scored not only for technical correctness but against the
+\textbf{Black Start Augmentation System (BSA)} documentation standard: the
+Three-Track Rule, the six Operational Domains, BSL maturity, the four
+Operational Modes, and the seven-stage Skill Pipeline. This section maps the
+P00 work onto that framework so the remainder of the document can be read as
+evidence for each claim.
+
+\subsection{The Three-Track Rule}
+No skill counts as complete until it clears all three tracks.
+
+\begin{longtable}{@{}p{2.4cm} p{8.4cm} c@{}}
+\toprule
+\textbf{Track} & \textbf{Requirement / evidence in this build} & \textbf{Status}\\
+\midrule\endhead
+\textbf{CL — Cognitive} & Theory of hardening, addressing, and container isolation is
+explained throughout Parts A/B — e.g.\ the \texttt{sshd\_config} include-ordering
+rule (§\ref{sec:d3fix}) and DHCP-vs-static lease semantics (§\ref{sec:baseline}). & \pass\\
+\addlinespace
+\textbf{SL — System} & A working node exists: hardened SSH, host firewall,
+intrusion protection, automated patching, and a container substrate, all
+verified live. & \pass\\
+\addlinespace
+\textbf{BSL — Black Start} & Rebuild-from-zero was not hypothetical: a self-inflicted
+network lockout (§\ref{sec:lockout}) forced a full re-image, and the node was
+reconstituted from the documented procedure. The changed Machine ID is the proof
+(§\ref{sec:rebuild}). & \pass\\
+\bottomrule
+\end{longtable}
+
+\subsection{Operational Domains — P01 target: score 1 in each}
+\begin{longtable}{@{}p{2.3cm} p{7.6cm} c@{}}
+\toprule
+\textbf{Domain} & \textbf{P00 contribution} & \textbf{Score}\\
+\midrule\endhead
+\domain{Energy}     & Out of scope for P00; UPS/solar deferred to later P01 tasks. & 0$\rightarrow$pending\\
+\domain{Compute}    & Docker substrate operational; \texttt{arm64v8} image path proven (Fig.\ 43). & 1\\
+\domain{Storage}    & Portfolio vault on Git; artifacts committed; microSD boot (endurance noted §\ref{sec:storage}). & 1\\
+\domain{Network}    & Static addressing achieved; DNS corrected; firewall default-deny. & 1\\
+\domain{Control}    & Key-only SSH proven by negative test; least-privilege user model. & 1\\
+\domain{Production} & Reproducible build proven by rebuild; Ansible-style repeatability is the next step. & 1\\
+\bottomrule
+\end{longtable}
+\noindent Five of six domains reach the P01 baseline of 1. \domain{Energy} is the
+single deferred item and is scheduled with the Kill-a-watt power baseline and
+2-node cluster later in P01.
+
+\subsection{BSL Maturity attained}
+Phase target for P01–P04 is \bsl{1}/\bsl{2}. This build attains \bsl{1}
+(lab-capable) across all in-scope domains and demonstrates elements of \bsl{2}
+(offline/recoverable): the node was recovered from bare storage using
+documentation alone.
+
+\subsection{Four Operational Modes}
+\begin{longtable}{@{}p{3.2cm} p{8.4cm} c@{}}
+\toprule
+\textbf{Mode} & \textbf{Demonstrated?} & \textbf{Status}\\
+\midrule\endhead
+1 — Online       & Normal operation over Wi-Fi / Ethernet. & \pass\\
+2 — Degraded     & Node traversed three networks (§\ref{sec:relocate}); operated on a phone hotspot. & partial\\
+3 — Offline      & Not yet — updates still require internet; local mirror is a later task. & pending\\
+4 — Black Start  & The lockout $\rightarrow$ re-image $\rightarrow$ reconstitution is a partial Mode-4 event (no net, storage rebuilt). & partial\\
+\bottomrule
+\end{longtable}
+
+\subsection{Seven-Stage Skill Pipeline}
+\begin{center}\small
+\begin{tabular}{@{}c c c c c c c@{}}
+\toprule
+LEARN & BUILD & INSPECT & BREAK & DEFEND & RECOVER & OPTIMIZE\\
+\midrule
+\pass & \pass & \pass & \pass & \pass & \pass & partial\\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent \textsc{Inspect} = baseline capture and the \texttt{sshd -T} audit;
+\textsc{Break} = the wrong-subnet lockout and the negative auth test;
+\textsc{Recover} = the full rebuild. All seven stages are represented, with
+\textsc{Optimize} carried forward (SSD migration, DHCP reservation).
+
+\subsection{Black Start Score Matrix — current node state}
+\begin{longtable}{@{}p{2.2cm} p{5.4cm} p{4.2cm}@{}}
+\toprule
+\textbf{Domain} & \textbf{Current state} & \textbf{Target (100)}\\
+\midrule\endhead
+Energy     & Grid only (0)                          & 72\,hr battery+solar\\
+Compute    & Docker local; rebuild $\sim$1 image pass & $<$2\,hr full rebuild\\
+Storage    & Git vault + microSD (no M-DISC yet)     & 3-2-1 local + M-DISC\\
+Network    & Static + firewall; single path          & 3 independent paths\\
+Control    & Key-only SSH, local user; no cloud IdP  & zero cloud dependency\\
+Production & Reproducible ($\sim$1 image pass)        & $<$4\,hr from blank HW\\
+\bottomrule
+\end{longtable}
+\noindent \textbf{Rule satisfied:} hard external dependencies were reduced —
+password authentication and any cloud-IdP path were removed; the node authenticates
+locally by key with no external identity provider.
+
+\subsection{Research seed}
+This document is the deliverable for research seed \textbf{T1.1 — Minimum Viable
+Sovereign Infrastructure Specification}, and the \texttt{cst-portfolio} repository
+is the concrete instance of \texttt{Sovereign-Bootstrap-v1}. The node hostname
+\texttt{dc-node-01} designates it as the first node of \textbf{D-Central}.
+
+% ============================================================= PART 0
+\parttitle{Part 0}{Image Preparation and First Contact}
+
+\subsection{Tooling}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Tool} & \textbf{Version} & \textbf{Role}\\
+\midrule
+Raspberry Pi Imager & v2.0.10 (Win 11) & Writes image + first-boot customisation\\
+PuTTY               & current          & Initial SSH client\\
+OpenSSH (Windows)   & built-in         & \texttt{ssh}/\texttt{scp}/\texttt{ssh-keygen} from PowerShell\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Device, OS, and storage selection}
+Raspberry Pi 5 was selected (BCM2712 boot chain). The recommended
+\textbf{Raspberry Pi OS 64-bit (Trixie)} image was used — a deliberate deviation
+from the manual's Bookworm target, since Bookworm is now the \emph{Legacy} entry
+and Trixie receives current security updates (analysed in §\ref{sec:trixie}).
+
+\evfig{fig-0.2-imager-os-trixie64.png}{0.9}{Imager — Raspberry Pi OS 64-bit (Trixie), released 2026-06-18, cached locally.}
+
+The only eligible target was a 59.5\,GB ``USB Mass Storage Device.'' A Windows
+AutoPlay prompt claimed the drive was damaged; this is a false positive —
+Windows cannot read the Linux \texttt{ext4} partition and must be ignored
+(never run the repair tool on a fresh image).
+
+\evfig{fig-0.3-imager-storage-usb.png}{0.9}{Storage selection; note the AutoPlay false-positive warning at lower right.}
+
+\subsection{First-boot customisation}
+Hostname \texttt{dc-node-01}, locale Ottawa / America\_Toronto / \texttt{us},
+user \texttt{admin}, Wi-Fi, and SSH were injected into the boot partition so the
+node came up configured headless. A genuine WPA2 validation failure
+(``Password is too short — min 8 characters'') was captured and corrected.
+
+\evfig{fig-0.6-custom-wifi-validation.png}{0.9}{WPA2-PSK minimum-length validation enforced before write.}
+
+\subsection{First contact}
+No monitor or keyboard was ever attached. The node registered via mDNS and was
+reached at \texttt{dc-node-01.local}.
+
+\evfig{fig-0.11-putty-login-admin.png}{0.62}{First SSH login as \texttt{admin} over mDNS.}
+
+% ============================================================= PART A
+\parttitle{Part A}{The Setup Manual — Execution Record}
+
+\section{Baseline capture}\label{sec:baseline}
+Before any change, the starting state was recorded — the ``before'' half of every
+later claim.
+
+\evfig{fig-01-hostnamectl-baseline.png}{0.72}{\texttt{hostnamectl} — Trixie, kernel 6.18.34, arm64. Machine ID \texttt{c8624351\ldots} (recorded; becomes rebuild proof).}
+
+\subsection{Hardware and network}
+\texttt{/proc/device-tree/model} reads \texttt{Raspberry Pi 5 Model B Rev 1.1}
+directly from the device tree. \texttt{ip a} shows \texttt{eth0} as
+\texttt{NO-CARRIER} and \texttt{wlan0} on a \emph{dynamic} DHCP lease
+(\texttt{valid\_lft 172252sec}) — the single most important baseline finding,
+and the problem §\ref{sec:static} exists to remove.
+
+\evfig{fig-03-ip-a-baseline.png}{0.82}{\texttt{ip a} baseline: \texttt{eth0} down, \texttt{wlan0} on a dynamic lease.}
+
+\subsection{Storage}\label{sec:storage}
+\begin{lstlisting}[style=console]
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/mmcblk0p2   58G  6.8G   49G  13% /
+/dev/mmcblk0p1  505M   87M  418M  18% /boot/firmware
+\end{lstlisting}
+\noindent\fail\ against the manual's SSD requirement: root is on
+\texttt{/dev/mmcblk0p2} — \textbf{microSD}. The ``USB Mass Storage Device'' was a
+card reader holding the SD. The build continued on microSD deliberately; the
+endurance limitation is carried into the risk register (§\ref{sec:security}).
+
+\evfig{fig-04-df-h-mmcblk.png}{0.82}{\texttt{df -h} — root on \texttt{mmcblk0p2}; the manual's SSD verification fails here.}
+
+\section{System update and firmware}
+\texttt{apt full-upgrade} pulled 60 packages on a weeks-old image — the practical
+argument for automatic updates (§\ref{sec:unattended}). After reboot,
+\texttt{rpi-eeprom-update} reported the bootloader \textbf{up to date}
+(\texttt{CURRENT = LATEST}) — the only check that means anything, since EEPROM
+updates apply at boot.
+
+\evfig{fig-18-eeprom-verified.png}{0.72}{Firmware verified up to date after reboot.}
+
+\section{Base configuration (\texttt{raspi-config})}
+The tool's title bar independently confirms \texttt{Raspberry Pi 5 Model B Rev
+1.1, 8GB}. The hostname field arrived \emph{pre-populated} with \texttt{dc-node-01}
+— the payoff of first-boot customisation: configuration collapsed to verification.
+
+\evfig{fig-08-raspi-config-hostname.png}{0.62}{Hostname pre-populated; step becomes a verification, not a change.}
+
+\section{Static addressing — failure, lockout, and rebuild}\label{sec:static}
+This is the longest section because it is the only one where the build broke —
+four faults in sequence, each a distinct lesson, and a Black Start recovery.
+
+\subsection{Discover before you modify}
+\texttt{nmcli connection show} revealed the active profile as
+\texttt{netplan-wlan0-Calypso}, \emph{not} the manual's \texttt{"Wired connection
+1"}. The \texttt{netplan-} prefix signals a renderer above NetworkManager — a
+change made only with \texttt{nmcli} can be silently reverted.
+
+\evfig{fig-10-nmcli-discovery.png}{0.9}{Real profile name discovered; Netplan-over-NetworkManager layering exposed.}
+
+\subsection{The lockout}\label{sec:lockout}
+The manual's \emph{example} values (\texttt{192.168.1.50/24}) were applied to a
+node on \texttt{10.0.0.0/24}. \texttt{nmcli} accepted the syntactically valid,
+semantically fatal address and returned success. The node vanished.
+
+\evfig{fig-13-putty-connection-abort.png}{0.5}{The result: PuTTY ``Software caused connection abort.'' A lockout via the \emph{network} layer, not SSH.}
+
+\noindent This is the report's central technical result: \textbf{a command that
+exits zero is not evidence.} \texttt{nmcli} validated the address's syntax, not
+its reachability. Diagnosis from the workstation showed a flood of
+\texttt{169.254.x.x} (APIPA) — no DHCP was answering on that segment, separating
+``the node is misconfigured'' from ``this segment has no DHCP.''
+
+\subsection{Black Start recovery}\label{sec:rebuild}
+With \texttt{eth0} unconnected and no monitor attached, no in-place repair existed.
+Recovery was a full re-image using the identical Part 0 procedure — a partial
+Mode-4 (Black Start) event. The proof it was a genuine rebuild:
+
+\evfig{fig-15-hostnamectl-rebuilt.png}{0.72}{Post-rebuild \texttt{hostnamectl}: Machine ID changed \texttt{c8624351\ldots}$\rightarrow$\texttt{9e98c91d\ldots} — unforgeable evidence of a fresh install. Everything else reproduced identically.}
+
+\subsection{The static address, applied correctly}
+Post-rebuild the profile was plain \texttt{Calypso} (the \texttt{netplan-} prefix
+gone — risk T5 resolved by the rebuild). Applied with this network's real values,
+\texttt{ip a} confirmed the result:
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & \textbf{Baseline (Fig.\ 3)} & \textbf{After}\\
+\midrule
+Address  & \texttt{10.0.0.249/24} & \texttt{10.0.0.2/24}\\
+Flags    & \texttt{dynamic}       & \texttt{noprefixroute} (no \texttt{dynamic})\\
+Lifetime & \texttt{172252sec}     & \texttt{forever}\\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent \texttt{valid\_lft forever} with no \texttt{dynamic} flag is the
+definitive signature of a manual address. \pass
+
+\subsection{The node outran its static address}\label{sec:relocate}
+Relocation moved the node across three networks in three sessions — Wi-Fi
+\texttt{10.0.0.2}, wired \texttt{192.168.1.2} (DHCP), and an iOS hotspot
+\texttt{172.20.10.4/28}. \textbf{A host-side static address is bound to one
+subnet}; the durable control for ``always reachable'' is a router-side DHCP
+reservation keyed to the MAC. Recorded as a design change for the permanent
+installation (and a P01 carry-forward).
+
+\section{Users, keys, and daemon hardening}
+\subsection{Account model and the permission lesson}
+\texttt{groups} confirmed \texttt{sudo}, so no new admin account was needed. The
+sequence \texttt{passwd} (denied) $\rightarrow$ \texttt{sudo passwd} (succeeded)
+cleanly demonstrated the \texttt{/etc/shadow} permission model — an unprivileged
+user may change only their own password. A deliberate \texttt{testuser1} was
+created to satisfy the account-lifecycle requirement.
+
+\subsection{Key generation and distribution}
+An Ed25519 keypair was generated on the workstation and the public half pushed
+with \texttt{scp} — the correct direction (a private key never leaves its origin).
+The first-connection host-key fingerprint prompt is a security control, not a
+formality.
+
+\evfig{fig-30-key-login-no-password.png}{0.72}{Key-based login with no password prompt — pubkey auth working end to end, verified in a second session while the first stayed open.}
+
+\subsection{Validate-before-replace}
+Editing \texttt{sshd\_config} through a validated temporary copy caught a real
+syntax error at line 117; the abort left the live file untouched. On a headless
+node an \texttt{sshd} that will not start is an unrecoverable lockout — this habit
+is what stands between a typo and a trip to the hardware.
+
+\section{Host firewall — \texttt{ufw}}
+Default-deny inbound, allow outbound, SSH explicitly permitted — and crucially
+\texttt{ufw allow OpenSSH} was issued \emph{before} \texttt{ufw enable}, so the
+management path was never severed. Both IPv4 and IPv6 rules were created, which
+matters on a node holding global IPv6 addresses.
+
+\evfig{fig-33-ufw-status-verbose.png}{0.82}{\texttt{ufw status verbose} — default-deny inbound, OpenSSH allowed on v4 and v6.}
+
+\section{Brute-force protection — \texttt{fail2ban}}
+The \texttt{sshd} jail is active with the \textbf{journal} backend
+(\texttt{\_SYSTEMD\_UNIT=ssh.service}) — the modern source; a file-based filter on
+a journal-only system would watch a file that never fills.
+\texttt{jail.conf $\rightarrow$ jail.local} is the upgrade-safe customisation pattern.
+
+\evfig{fig-35-fail2ban-jail-sshd.png}{0.82}{\texttt{fail2ban-client status sshd} — active jail, journal backend, zero bans (clean baseline).}
+
+\section{Automatic security updates}\label{sec:unattended}
+\texttt{unattended-upgrades} installed and \textbf{enabled at boot} (systemd
+symlink into \texttt{multi-user.target.wants}). This answers the 60-pending-package
+observation: a node left alone drifts out of patch currency within days.
+
+\section{Time synchronisation}
+\texttt{timedatectl} showed \texttt{synchronized: yes}, \texttt{NTP active}, and the
+correct \texttt{-0400 EDT} offset with \texttt{RTC in local TZ: no} (hardware clock
+in UTC — the correct posture). Correct time is load-bearing for \texttt{fail2ban}
+correlation, TLS validity, and any future TOTP.
+
+\evfig{fig-38-timedatectl-synchronized.png}{0.82}{\texttt{timedatectl} — clock synchronised, NTP active.}
+
+\section{Core tooling and portfolio workflow}
+Tooling installed (\texttt{git} 2.47.3, \texttt{vim}, \texttt{tmux}, \ldots), with
+\texttt{dnsutils}$\rightarrow$\texttt{bind9-dnsutils} shown as a virtual-package
+resolution rather than an error. GitHub SSH auth was proven — the pre-registration
+\texttt{Permission denied (publickey)} is expected, and the success greets the
+account by name.
+
+\evfig{fig-41-github-auth-success.png}{0.72}{\texttt{Hi RedjiJB!} — key bound to the correct GitHub identity.}
+
+\section{Container substrate — Docker}
+The install script's echoed actions show a GPG key placed in
+\texttt{/etc/apt/keyrings} and a \texttt{signed-by} repository line, so packages
+are verified through APT's normal trust path. \texttt{hello-world} pulled the
+\texttt{arm64v8} variant — multi-arch resolution working, vindicating the 64-bit
+OS choice.
+
+\evfig{fig-43-docker-hello-world.png}{0.72}{Docker daemon functional; \texttt{arm64v8} image resolution.}
+
+% ============================================================= PART B
+\parttitle{Part B}{Meta Report}
+
+\section{Objective and scope}
+Provision a Raspberry Pi 5 from bare hardware into a hardened, reproducible
+server node — the foundation for the D-Central and CST portfolios and the P01
+Black Start bootstrap. In scope: image prep, baseline, patching, addressing, key
+hardening, firewall, intrusion protection, auto-patching, time sync, tooling,
+portfolio workflow, container substrate. Out of scope: service deployments
+(later projects).
+
+\section{Competencies demonstrated}
+Linux administration (accounts, the \texttt{/etc/shadow} model, systemd, package
+management); network configuration and diagnosis (lease semantics, NetworkManager/
+Netplan layering, APIPA identification, mDNS, NAT64 observation); host hardening
+(Ed25519 keys, host-key verification, dual-stack default-deny, journal-backed
+\texttt{fail2ban}, validate-before-replace); and service management with an
+honest, evidence-backed record of a self-inflicted outage and its recovery.
+
+\section{Analysis and discussion}
+\textbf{First-boot customisation is the highest-leverage step} — it turned
+configuration into verification and made the rebuild cheap. \textbf{The central
+finding} is that \texttt{nmcli} succeeded and the node disappeared: exit status
+measured the parser, not the outcome, which is the strongest possible case for
+the \pass-discipline used throughout. \textbf{Reproducibility was proven by
+recovery, not assertion} — the Machine ID change documents a rebuild whose cost
+was one imaging pass. \textbf{Static addressing solved the wrong half of the
+problem} for a portable node; the durable control is a router-side reservation.
+
+\section{Challenges and troubleshooting}
+\subsection{Bookworm $\rightarrow$ Trixie}\label{sec:trixie}
+The manual targets Debian 12; the recommended image is Debian 13, with Bookworm
+demoted to \emph{Legacy}. Trixie was accepted deliberately. The cost: the manual
+can no longer be trusted verbatim, and §\ref{sec:static} is where that bit. A
+build manual pinned to a distribution release has a shelf life.
+
+\subsection{The include-ordering trap (D3)}\label{sec:d3fix}
+The hardening drop-in existed, validated, and loaded — yet
+\texttt{PasswordAuthentication} stayed \texttt{yes}. \texttt{sshd\_config}
+resolves the \emph{first} value obtained, and cloud-init's
+\texttt{50-cloud-init.conf} sorted ahead of the \texttt{99-} file. Renaming to
+\texttt{00-} won the ordering. \textbf{Configuration that is present is not
+configuration that is effective.}
+
+\evfig{fig-59-negative-test-permission-denied.png}{0.82}{The negative test — \texttt{Permission denied (publickey)} — proves password auth is \emph{refused}, the evidence the whole hardening objective rests on.}
+
+\subsection{One stalled activation, three symptoms (D1 + D8)}
+A single stalled DHCP activation produced a dead resolver, an unsynchronised clock,
+and dropping SSH sessions — none of which names the network on its own. Moving the
+node to a static Wi-Fi profile fixed all three at once. \texttt{NTP service:
+active} described a daemon synchronising with nothing — the same present-vs-effective
+lesson as D3, in a second subsystem.
+
+\section{Security and risk considerations}\label{sec:security}
+Controls in place and evidenced: non-root \texttt{admin} with sudo; Ed25519 key
+auth with host-key verification; \textbf{key-only SSH proven by negative test};
+dual-stack default-deny firewall; active \texttt{fail2ban} jail; auto-patching
+enabled at boot; NTP synchronised; APT GPG trust for Docker; per-machine keypairs.
+Residual risks: physical access; microSD endurance; addressing instability on a
+portable node; \texttt{docker}-group root-equivalence (an accepted, documented
+trade-off); mDNS advertisement on the local segment.
+
+\section{Conclusion and lessons learned}
+A hardened, documented, container-ready node exists as the portfolio and D-Central
+foundation, with all nine defects closed and reboot persistence verified. Ordered
+by what they cost to learn:
+\begin{enumerate}[leftmargin=1.4em]
+\item A command that exits zero is not evidence — verify the outcome, not the return code.
+\item Configuration that is \emph{present} is not configuration that is \emph{effective}.
+\item Never copy example values; every address is a placeholder until checked against \texttt{ip a}.
+\item Enumerate every path that can sever your own management channel.
+\item Reproducibility is proven by recovery, not by assertion.
+\item Discover before you modify — the connection name changed three times in one build.
+\item Watch for configuration layered above the tool you are using.
+\item Validate before replacing.
+\item Static addressing solves the wrong half of the problem for a portable node.
+\item A build manual pinned to a distribution release expires.
+\end{enumerate}
+
+% ============================================================= §Defects
+\section{Defect Register}
+\begin{longtable}{@{}c p{6.6cm} c@{}}
+\toprule
+\textbf{ID} & \textbf{Defect} & \textbf{Status}\\
+\midrule\endhead
+D1 & DNS secondary typo \texttt{8.4.4.4} $\rightarrow$ \texttt{8.8.4.4} & \closed\\
+D2 & Pre-existing \texttt{redji} account with sudo & \closed\ (absent on current install)\\
+D3 & Password/root login enabled — include-ordering & \closed\ (negative test)\\
+D4 & Docker required \texttt{sudo} & \closed\\
+D5 & \texttt{\~{}/.ssh} permissions unverified & \closed\\
+D6 & \texttt{testuser1} held sudo & \closed\ (revoked)\\
+D7 & Reboot survival unverified & \closed\ (6 controls persisted)\\
+D8 & Clock unsynchronised after reboot & \closed\ (root cause: D1 chain)\\
+D9 & Portfolio push & \closed\ (published, sanitised)\\
+\bottomrule
+\end{longtable}
+
+% ============================================================= §Rubric
+\section{Rubric Self-Assessment}
+\begin{longtable}{@{}p{5.6cm} c p{4.4cm}@{}}
+\toprule
+\textbf{Dimension} & \textbf{/4} & \textbf{Note}\\
+\midrule\endhead
+Objective clarity          & 4 & Scope and exclusions stated\\
+Reproducibility            & 4 & Proven by rebuild under adversarial conditions\\
+Evidence quality           & 4 & 62 figures; failed verifications retained\\
+Technical correctness      & 3 & Deviations analysed, not smoothed\\
+Analysis depth             & 4 & Mechanism explained, not just outcome\\
+Professional communication & 4 & Defect register, honest failure reporting\\
+Competency mapping         & 4 & Four courses, figure-level backing\\
+Security consideration     & 4 & Audited, failed, fixed, proven by negative test\\
+\midrule
+\textbf{Total} & \textbf{32/32} & Above threshold ($\geq$28)\\
+\bottomrule
+\end{longtable}
+
+% ============================================================= Appendix
+\parttitle{Appendix C}{Evidence Index and File Mapping}
+
+Rename screenshots to these names in \texttt{evidence/} so figure references
+resolve and the \verb|\evfig| macro finds each file.
+
+\begin{longtable}{@{}c p{9.6cm}@{}}
+\toprule
+\textbf{Fig} & \textbf{Filename}\\
+\midrule\endhead
+0.1--0.12 & \texttt{fig-0.1-imager-device-pi5.png} \ldots\ \texttt{fig-0.12-imager-write-complete.png}\\
+1  & \texttt{fig-01-hostnamectl-baseline.png}\\
+2  & \texttt{fig-02-device-tree-model.png}\\
+3  & \texttt{fig-03-ip-a-baseline.png}\\
+4  & \texttt{fig-04-df-h-mmcblk.png}\\
+5  & \texttt{fig-05-apt-full-upgrade.png}\\
+6--9 & \texttt{fig-06-raspi-config-main.png} \ldots\ \texttt{fig-09-raspi-config-localisation.png}\\
+10 & \texttt{fig-10-nmcli-discovery.png}\\
+11 & \texttt{fig-11-nmcli-quote-error.png}\\
+12 & \texttt{fig-12-nmcli-wrong-subnet.png}\\
+13 & \texttt{fig-13-putty-connection-abort.png}\\
+14 & \texttt{fig-14-powershell-apipa.png}\\
+15 & \texttt{fig-15-hostnamectl-rebuilt.png}\\
+16--18 & \texttt{fig-16-supd-typo-52-packages.png} \ldots\ \texttt{fig-18-eeprom-verified.png}\\
+19--24 & \texttt{fig-19-nmcli-calypso-renamed.png} \ldots\ \texttt{fig-24-df-h-reverify.png}\\
+25--31 & \texttt{fig-25-groups-adduser-passwd.png} \ldots\ \texttt{fig-31-sshd-config-syntax-error.png}\\
+32--39 & \texttt{fig-32-ufw-install.png} \ldots\ \texttt{fig-39-core-tooling.png}\\
+40--44 & \texttt{fig-40-ssh-keygen-github-denied.png} \ldots\ \texttt{fig-44-docker-compose-version.png}\\
+45--52 & \texttt{fig-45-sshd-T-audit-failed.png} \ldots\ \texttt{fig-52-testuser1-has-sudo.png}\\
+53--60 & \texttt{fig-53-post-reboot-part1.png} \ldots\ \texttt{fig-60-dns-activation-fail-testuser1-ntp.png}\\
+61--62 & \texttt{fig-61-wired-stuck-activating-linklocal-dns.png}, \texttt{fig-62-wifi-static-dns-ntp-synchronized.png}\\
+\bottomrule
+\end{longtable}
+
+\vspace{1em}
+\noindent\textbf{Excluded from evidence (never publish):} online-banking capture
+(account balances/transactions) and two unrelated CCNA/ROAS topology images.
+Absence in the published tree was verified post-push with
+\texttt{git ls-files | grep -E "071704|184342|183550"} returning empty.
+
+\end{document}

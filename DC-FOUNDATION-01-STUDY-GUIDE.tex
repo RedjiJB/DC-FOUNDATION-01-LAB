@@ -1,0 +1,395 @@
+% =====================================================================
+%  DC-FOUNDATION-01 — Complete Study Guide (LaTeX)
+%  Compile:  pdflatex DC-FOUNDATION-01-STUDY-GUIDE.tex   (run twice for ToC)
+%
+%  IMAGES: shares the SAME evidence/ folder as the report .tex.
+%  Missing images show a gray placeholder (via \evfig), so this always
+%  compiles. Rename screenshots to the fig-*.png names (see EVIDENCE-SETUP.md).
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amssymb}
+\usepackage[a4paper,margin=1in,headheight=14pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks,colorlinks=true,linkcolor=dcred,urlcolor=dcblue]{hyperref}
+
+\definecolor{dcred}{RGB}{155,25,45}
+\definecolor{dcblue}{RGB}{20,80,140}
+\definecolor{dcgreen}{RGB}{20,120,60}
+\definecolor{dcgray}{RGB}{90,90,90}
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{consolebg}{RGB}{25,30,40}
+\definecolor{consolefg}{RGB}{225,225,225}
+\definecolor{qbg}{RGB}{234,240,247}
+\definecolor{abg}{RGB}{233,244,236}
+
+\titleformat{\section}{\Large\bfseries\color{dcred}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{dcblue}}{\thesubsection}{0.6em}{}
+
+\pagestyle{fancy}\fancyhf{}
+\lhead{\small\textcolor{dcgray}{DC-FOUNDATION-01 · Study Guide}}
+\rhead{\small\textcolor{dcgray}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\lstdefinestyle{bash}{backgroundcolor=\color{codebg},basicstyle=\ttfamily\small,
+  keywordstyle=\color{dcblue}\bfseries,commentstyle=\color{dcgreen}\itshape,
+  breaklines=true,columns=fullflexible,frame=single,rulecolor=\color{dcgray!40},
+  showstringspaces=false,xleftmargin=6pt,xrightmargin=6pt,
+  morekeywords={sudo,nmcli,ssh,scp,systemctl,apt,ufw,git,docker,timedatectl,chmod,cat,grep,ls,groups,usermod,passwd}}
+\lstdefinestyle{console}{backgroundcolor=\color{consolebg},
+  basicstyle=\ttfamily\footnotesize\color{consolefg},breaklines=true,
+  columns=fullflexible,frame=single,rulecolor=\color{consolebg},
+  showstringspaces=false,xleftmargin=6pt,xrightmargin=6pt}
+\lstset{style=bash}
+
+\graphicspath{{evidence/}{./}}
+\newcommand{\evfig}[3]{\begin{figure}[H]\centering
+  \IfFileExists{evidence/#1}{\includegraphics[width=#2\linewidth]{#1}}%
+  {\fbox{\parbox[c][3cm][c]{#2\linewidth}{\centering\ttfamily\small\textcolor{dcgray}{[ figure placeholder — supply \detokenize{#1} ]}}}}%
+  \caption{#3}\end{figure}}
+
+% skill-check boxes: question then answer
+\newtcolorbox{skillq}{colback=qbg,colframe=dcblue!60,boxrule=0.5pt,
+  left=6pt,right=6pt,top=4pt,bottom=4pt,title=\textbf{Skill Check}}
+\newtcolorbox{skilla}{colback=abg,colframe=dcgreen!55,boxrule=0.5pt,
+  left=6pt,right=6pt,top=4pt,bottom=4pt,title=\textbf{Answers}}
+
+\title{\vspace{-1cm}\textbf{\color{dcred}DC-FOUNDATION-01 — Complete Study Guide}\\[4pt]
+\large Understand every command, concept, and screenshot in the lab, from zero}
+\author{Redji Jean Baptiste (Toussaint)}
+\date{Companion to the DC-FOUNDATION-01 Lab Report}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\begin{tcolorbox}[colback=codebg,colframe=dcgray!50,boxrule=0.5pt]
+\textbf{How to use this.} This assumes you executed the lab by following the
+manual line-by-line without necessarily understanding it. It goes back over
+everything: what each piece does, why it is there, what the output means, and
+where it bites. Every part ends with a \textbf{Skill Check} — cover the answers
+and test yourself. When the Master Exam (§\ref{sec:exam}) is effortless, the lab
+is yours.
+\end{tcolorbox}
+
+\tableofcontents
+\clearpage
+
+% ---------------------------------------------------------------- 0
+\section{Mental model: what you actually built}
+You turned a bare Raspberry Pi into a \textbf{hardened headless Linux server}.
+Four words, the whole lab:
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Server} — an always-on computer that provides services over a network rather than being sat in front of.
+\item \textbf{Headless} — no screen or keyboard; reached entirely over SSH. Nothing was ever plugged into the Pi.
+\item \textbf{Hardened} — deliberately locked down: key-only logins, default-deny firewall, auto-patching, brute-force protection.
+\item \textbf{Linux} — Raspberry Pi OS, i.e.\ Debian, on the Pi's ARM chip.
+\end{itemize}
+
+% ---------------------------------------------------------------- 1
+\section{Foundations you need first}
+\subsection{The shell / terminal}
+The prompt \texttt{admin@dc-node-01:\~{} \$} is information: \texttt{admin} = the
+user; \texttt{dc-node-01} = the machine; \texttt{\~{}} = your home directory;
+\texttt{\$} = ordinary user (a \texttt{\#} would mean root). This is how you tell
+the Pi (bash, \texttt{admin@dc-node-01:\~{} \$}) from your laptop (PowerShell,
+\texttt{PS C:\textbackslash Users\textbackslash jredj>}) — several errors came
+from running a command on the wrong one.
+
+\subsection{Root, \texttt{sudo}, least privilege}
+Root can do anything, which is dangerous. You log in as limited \texttt{admin}
+and borrow root power per-command with \texttt{sudo}. This is \textbf{least
+privilege} — a theme of the whole lab.
+
+\subsection{SSH in one line}
+SSH gives you an encrypted remote shell on port 22; everything you type travels
+encrypted.
+
+\begin{skillq}
+1. What does \texttt{\~{}} mean, and what would \texttt{\#} instead of \texttt{\$} tell you?\\
+2. Why is \texttt{admin}+\texttt{sudo} safer than logging in as root?\\
+3. What does SSH give you and on what port?
+\end{skillq}
+\begin{skilla}
+1. Home directory; \texttt{\#} means you are root.
+2. Least privilege — limited blast radius; root power borrowed per-command and auditable.
+3. An encrypted remote shell (and file transfer); port 22.
+\end{skilla}
+
+% ---------------------------------------------------------------- 2
+\section{Imaging and first boot}
+\textbf{Flashing an image} copies a pre-installed OS onto the card.
+\textbf{First-boot customisation} injects hostname/user/Wi-Fi/SSH into the boot
+partition so the Pi self-configures headless — which is why \texttt{raspi-config}
+later showed the hostname already filled in, and why your rebuild was cheap.
+The Windows ``damaged drive'' prompt is a \textbf{false alarm} (Windows can't
+read \texttt{ext4}); ignore it. \textbf{mDNS} resolves \texttt{dc-node-01.local}
+by local self-announcement — convenient, not dependable, hence the later static
+IP.
+
+\begin{skillq}
+1. Why no monitor needed? \quad 2. Windows says the card is damaged — do what? \quad 3. How did \texttt{.local} resolve with no DNS?
+\end{skillq}
+\begin{skilla}
+1. First-boot customisation self-configured it. 2. Ignore it (ext4 misread; repair can corrupt). 3. mDNS/Avahi local name announcement.
+\end{skilla}
+
+% ---------------------------------------------------------------- 3
+\section{Baseline capture}
+Read-only commands run \emph{before} changes — the ``before'' photo.
+\texttt{hostnamectl} prints identity; its \textbf{Machine ID} is generated per
+install, so its later change proved your rebuild. \texttt{uname -a} = kernel
+details. \texttt{ip a} lists interfaces: \texttt{lo} (loopback), \texttt{eth0}
+(\texttt{NO-CARRIER} = unplugged), \texttt{wlan0} (Wi-Fi). The line
+\texttt{inet 10.0.0.249/24 ... dynamic ... valid\_lft 172252sec} means a
+\textbf{DHCP} address (\texttt{dynamic}) on a finite lease — the problem §6
+solves.
+
+\evfig{fig-04-df-h-mmcblk.png}{0.8}{\texttt{df -h}: root on \texttt{/dev/mmcblk0p2}. \texttt{mmcblk} = SD card, so you were booting microSD, not SSD.}
+
+\texttt{cat /proc/device-tree/model} reads the board's own identity from
+\texttt{/proc} (a virtual filesystem the kernel exposes) — authoritative.
+
+\begin{skillq}
+1. Why baseline first? \quad 2. Which two words prove DHCP not static? \quad 3. How did \texttt{df -h} reveal an SD card? \quad 4. What is \texttt{/proc}?
+\end{skillq}
+\begin{skilla}
+1. It's the reference every later verification compares to. 2. \texttt{dynamic} + \texttt{valid\_lft <sec>}; static shows neither (\texttt{forever}). 3. Device \texttt{mmcblk0p2}; \texttt{mmcblk} = SD/MMC. 4. A virtual filesystem exposing live kernel/hardware data.
+\end{skilla}
+
+% ---------------------------------------------------------------- 4
+\section{Updating the system}
+\texttt{apt} is Debian's package manager. \texttt{apt update} refreshes the
+\emph{catalog} (downloads nothing installable); \texttt{apt full-upgrade}
+installs newer versions and may remove packages to fix dependencies;
+\texttt{-y} auto-confirms. In \texttt{A \&\& B}, \textbf{B runs only if A
+succeeded} — which is why your \texttt{supd} typo was harmless: the update half
+ran, the misspelled half failed alone. \texttt{rpi-eeprom-update -a} updates
+bootloader firmware, verified only \emph{after} a reboot.
+
+\begin{skillq}
+1. \texttt{update} vs \texttt{full-upgrade}? \quad 2. What does \texttt{\&\&} guarantee? \quad 3. Why reboot before verifying firmware?
+\end{skillq}
+\begin{skilla}
+1. Catalog refresh vs installing newer versions (may remove packages). 2. Second command runs only if the first succeeded. 3. Firmware is staged and applied at boot, so ``up to date'' is only meaningful post-reboot.
+\end{skilla}
+
+% ---------------------------------------------------------------- 6
+\section{Networking deep dive}
+The hardest section — it broke your build.
+\subsection{IP addresses and CIDR}
+\texttt{/24} = first 24 bits are the network, last 8 the host — so all
+\texttt{10.0.0.x} share a network. \texttt{/28} = only 16 addresses (14 usable),
+which is why a phone hotspot holds few devices. \textbf{The lockout:} you set
+\texttt{192.168.1.50/24} on a \texttt{10.0.0.0/24} node — different networks, so
+the Pi could reach nothing and dropped your session.
+\subsection{Gateway and DNS}
+Gateway (\texttt{10.0.0.1}) = the router, your exit to the internet. DNS
+(\texttt{8.8.8.8}) translates names to addresses. Your \texttt{8.4.4.4} typo was
+a broken \emph{secondary} — invisible until the primary failed.
+\subsection{DHCP vs static; NetworkManager}
+DHCP = auto, leased, changes. Static = fixed by hand. Servers need a stable
+address. Control it with \texttt{nmcli}; the profile has a \emph{name} you must
+\textbf{discover, never assume} (yours changed three times). \texttt{ipv4.method
+manual} is the switch to static; \texttt{connection up} deactivates and
+rebuilds the connection (which is why doing it over your own link can
+disconnect you).
+\subsection{APIPA}
+A flood of \texttt{169.254.x.x} means a host self-assigned because \textbf{no
+DHCP answered} — a whole-segment fault, not just the node.
+
+\begin{skillq}
+1. Why did \texttt{192.168.1.50/24} on \texttt{10.0.0.0/24} disconnect the Pi?\\
+2. \texttt{/24} vs \texttt{/28} host counts? \quad 3. Tell DHCP from static in \texttt{ip a}?\\
+4. \texttt{169.254.x.x} everywhere — what and what does it rule out?\\
+5. Why always \texttt{nmcli connection show} first?
+\end{skillq}
+\begin{skilla}
+1. Different networks; no route to gateway/peer, so all traffic including SSH died.
+2. \texttt{/24}=254 usable, \texttt{/28}=14 usable.
+3. DHCP: \texttt{dynamic}+finite \texttt{valid\_lft}; static: \texttt{forever}, no \texttt{dynamic}.
+4. APIPA/link-local — no DHCP answered; rules out ``only the node is broken.''
+5. Profile names aren't fixed (yours changed three times); assuming gives ``unknown connection.''
+\end{skilla}
+
+% ---------------------------------------------------------------- 7
+\section{Users and permissions}
+\texttt{/etc/passwd} = account metadata (world-readable, no passwords).
+\texttt{/etc/shadow} = password hashes (root-only). That is why
+\texttt{passwd redji} failed but \texttt{sudo passwd redji} worked — writing
+another user's password touches root-only \texttt{shadow}. \texttt{usermod
+-aG docker admin}: \texttt{-G} sets supplementary groups; \textbf{\texttt{-a}
+appends} — without it you \emph{replace} the whole list and can strip
+\texttt{sudo}. Group changes apply only in a new session.
+
+\begin{skillq}
+1. Why is \texttt{/etc/shadow} root-only? \quad 2. Why did \texttt{passwd redji} fail but \texttt{sudo passwd redji} work? \quad 3. What does \texttt{-a} prevent? \quad 4. Why did Docker still need \texttt{sudo} right after \texttt{usermod -aG}?
+\end{skillq}
+\begin{skilla}
+1. It holds password hashes; restricting it blocks offline cracking. 2. Writing another user's password needs root-owned \texttt{shadow}. 3. Overwriting all supplementary groups (losing \texttt{sudo}). 4. Group membership applies only to new sessions.
+\end{skilla}
+
+% ---------------------------------------------------------------- 8
+\section{SSH keys and hardening — the heart of the lab}
+\subsection{Asymmetric crypto}
+A \textbf{keypair}: private key stays on your laptop; public key goes to the
+server. The server verifies a signature only the private key could produce, so
+\textbf{no secret ever crosses the network}. \textbf{Ed25519} is preferred over
+RSA — strong, tiny, fast.
+\subsection{Distributing the key}
+\texttt{scp} pushes the \emph{public} key up. It must land in
+\texttt{\~{}/.ssh/authorized\_keys}. \textbf{\texttt{>>} appends;
+\texttt{>} overwrites} — \texttt{>} would wipe existing keys (harmless for you
+only because the file was empty). Permissions matter: \texttt{sshd} silently
+ignores \texttt{authorized\_keys} if \texttt{\~{}/.ssh} is group/world-writable
+(\texttt{chmod 700 \~{}/.ssh}; \texttt{chmod 600 authorized\_keys}).
+\subsection{Host keys}
+On first connect the \emph{server} proves its identity with a fingerprint saved
+to \texttt{known\_hosts}; a later change means a possible man-in-the-middle.
+\subsection{The include-ordering trap (D3)}
+Your drop-in \texttt{99-dc-hardening.conf} was overridden because
+\texttt{sshd\_config} uses the \textbf{first} value read, and cloud-init's
+\texttt{50-cloud-init.conf} sorted first with \texttt{PasswordAuthentication
+yes}. Renaming to \texttt{00-} fixed it. Always \texttt{sshd -t} (validate)
+before \texttt{systemctl restart ssh}.
+\subsection{Proving it: \texttt{sshd -T} and the negative test}
+\texttt{sshd -T} prints the \emph{effective} config — the actual decision after
+merging every file. Then the \textbf{negative test}, the single most important
+proof in the lab:
+
+\evfig{fig-59-negative-test-permission-denied.png}{0.82}{Negative test: forcing password-only auth and being \emph{refused} — the proof passwords are disabled. A working key never showed this.}
+
+\begin{lstlisting}[style=console]
+ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no admin@<ip>
+# PASS = Permission denied (publickey).
+\end{lstlisting}
+
+\begin{tcolorbox}[colback=abg,colframe=dcgreen!55]
+\textbf{The deepest lesson:} configuration that is \emph{present} is not
+configuration that is \emph{effective}. A working key proves the key works; only
+the negative test proves passwords are \emph{refused}. Test the refusal.
+\end{tcolorbox}
+
+\begin{skillq}
+1. How does key login prove identity without sending a secret? \quad 2. \texttt{>} vs \texttt{>>}? \quad 3. Key ignored, no error — check what first? \quad 4. Why did \texttt{99-} lose to \texttt{50-}? \quad 5. Write the negative test and its ``pass'' output. \quad 6. Why isn't a successful key login proof that passwords are off?
+\end{skillq}
+\begin{skilla}
+1. The server verifies a signature only the private key could make; the key never leaves your machine.
+2. \texttt{>} overwrites, \texttt{>>} appends.
+3. Permissions: \texttt{\~{}/.ssh}=700, \texttt{authorized\_keys}=600.
+4. First value wins; drop-ins load alphabetically; \texttt{50-}(yes) read before \texttt{99-}(no).
+5. \texttt{ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no admin@<ip>} → \texttt{Permission denied (publickey)}.
+6. Key and password auth are independent; only forcing password-only and being refused proves it.
+\end{skilla}
+
+% ---------------------------------------------------------------- 9
+\section{Firewall, fail2ban, patching, time}
+\textbf{\texttt{ufw}}: \texttt{default deny incoming} (nothing in unless
+allowed), \texttt{allow OpenSSH} \emph{before} \texttt{enable} (else you cut
+your own session), rules for both v4 and v6. \textbf{\texttt{fail2ban}}: bans IPs
+after repeated failures; \texttt{jail.conf}→\texttt{jail.local} survives
+upgrades; \texttt{systemctl enable --now} = start now + every boot; the journal
+backend reads systemd's log, not a text file. \textbf{\texttt{unattended-upgrades}}:
+auto-applies security patches (answers the 60-pending-packages problem).
+\textbf{\texttt{timedatectl}}: \texttt{synchronized: yes} + \texttt{NTP active};
+RTC in UTC is correct. Note: \texttt{NTP service: active} describes the daemon,
+not success — with DNS broken it can be ``active'' yet unsynchronised (D8).
+
+\evfig{fig-33-ufw-status-verbose.png}{0.8}{\texttt{ufw status verbose}: default-deny inbound, OpenSSH allowed on v4 and v6.}
+
+\begin{skillq}
+1. Why \texttt{allow OpenSSH} before \texttt{enable}? \quad 2. Why \texttt{jail.local} not \texttt{jail.conf}? \quad 3. \texttt{enable --now}? \quad 4. How can NTP be ``active'' but unsynced?
+\end{skillq}
+\begin{skilla}
+1. Enabling first applies default-deny with no SSH exception → lockout. 2. Upgrades overwrite \texttt{jail.conf}; \texttt{jail.local} persists. 3. Start now + on every boot. 4. ``Active'' = daemon running; broken DNS means it can't reach servers, so it never synchronises.
+\end{skilla}
+
+% ---------------------------------------------------------------- 13/14
+\section{Git, GitHub, and Docker}
+\textbf{Git}: \texttt{add} stages, \texttt{commit} snapshots, \texttt{push}
+uploads. \texttt{git init} made branch \texttt{master}; pushing \texttt{main}
+failed until \texttt{git branch -M main}. ``Repository not found'' meant the repo
+didn't exist on GitHub yet (\texttt{remote add} creates nothing server-side).
+\textbf{Deleting a file later does not remove it from Git history} — keep
+secrets out of the first commit (D9). \textbf{Docker}: a container is an isolated
+app sharing the host kernel. \texttt{curl | sh} runs remote code as root (a
+supply-chain risk, mitigated by the GPG-signed repo it installs).
+\texttt{hello-world} pulled the \texttt{arm64} image — multi-arch working. The
+\texttt{docker} group is \textbf{root-equivalent} — a security decision, not a
+convenience.
+
+\begin{skillq}
+1. Why did the first \texttt{git push origin main} fail? \quad 2. Why ``Repository not found'' not ``denied''? \quad 3. Why keep secrets out of the first commit? \quad 4. Why is \texttt{docker} group membership a security matter?
+\end{skillq}
+\begin{skilla}
+1. \texttt{init} made \texttt{master}; \texttt{main} didn't exist — \texttt{git branch -M main}. 2. GitHub won't confirm repos you can't see; it truly didn't exist yet. 3. History retains blobs recoverably; deletion later isn't enough. 4. It's root-equivalent (can mount host root in a container).
+\end{skilla}
+
+% ---------------------------------------------------------------- 15
+\section{The nine defects as teaching cases}
+\begin{longtable}{@{}cp{7.2cm}p{4.6cm}@{}}
+\toprule \textbf{ID} & \textbf{What happened} & \textbf{Transferable lesson}\\ \midrule
+D1 & DNS secondary typo & A broken backup is invisible until the primary fails.\\
+D2 & Unexplained \texttt{sudo} account & Audit who can escalate.\\
+D3 & Hardening present but overridden & Present $\ne$ effective; test the negative.\\
+D4 & Docker needed \texttt{sudo} & A convenience fix can be a security decision.\\
+D5 & Key-file perms unverified & \texttt{sshd} silently ignores loose perms.\\
+D6 & Demo account had \texttt{sudo} & Lab artifacts accumulate privilege.\\
+D7 & Reboot unverified & Configured $\ne$ persistent.\\
+D8 & Clock unsynced after reboot & One low-level fault fakes many symptoms.\\
+D9 & Publishing private data & Git history is permanent; sanitise first.\\
+\bottomrule
+\end{longtable}
+\textbf{Two meta-lessons:} (1) \emph{present $\ne$ effective} (D3, D8); (2)
+\emph{fix the lowest layer first} (D8 — one stalled DHCP faked three symptoms).
+
+% ---------------------------------------------------------------- 16
+\section{Master skill-check exam}\label{sec:exam}
+\begin{skillq}
+1. At the network level, why did \texttt{192.168.1.50/24} on \texttt{10.0.0.0/24} disconnect the Pi, and why no \texttt{nmcli} error?\\
+2. What single fact proves the re-image was a genuine fresh install, and why can't it be faked?\\
+3. Explain ``first value wins'' for \texttt{99-} vs \texttt{00-} drop-ins.\\
+4. Write the negative SSH test and its ``pass'' output.\\
+5. Why is a successful key login insufficient evidence of hardening?\\
+6. \texttt{169.254.x.x} everywhere — mechanism, and what it rules in/out?\\
+7. Why must \texttt{ufw allow OpenSSH} precede \texttt{ufw enable}?\\
+8. The rule shared by the SSH drop-in, \texttt{jail.local}, and temp-file editing?\\
+9. Why a DHCP reservation over a host static for a node that moves?\\
+10. Why keep sensitive screenshots out of the \emph{first} commit?\\
+11. \texttt{NTP active} but \texttt{NTPSynchronized no} — how both, and root cause?\\
+12. State the two meta-lessons with one incident each.
+\end{skillq}
+\begin{skilla}
+1. Different subnets; no route to gateway/peer, SSH died. \texttt{nmcli} validated syntax, not reachability.
+2. The Machine ID changed; it's generated on first boot of a fresh install, so a repair can't reproduce it.
+3. \texttt{sshd\_config} takes the first value read; drop-ins load alphabetically, so \texttt{00-} is read before \texttt{50-}/\texttt{99-} and wins.
+4. \texttt{ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no admin@<ip>} → \texttt{Permission denied (publickey)}.
+5. Key and password auth are independent; only the refusal proves passwords are off.
+6. APIPA — no DHCP answered; rules in a segment/DHCP fault, rules out ``only the node.''
+7. Otherwise default-deny applies with no SSH exception and severs your session.
+8. Put changes in an upgrade-safe override, validated before replacing the vendor file.
+9. A host static breaks on subnet change; a MAC-keyed reservation is stable at home and still works elsewhere.
+10. Git history is permanent and recoverable; deletion later doesn't remove it.
+11. ``Active'' = daemon running; broken DNS (from a stalled DHCP activation) stopped it reaching servers. Root cause was D1's network, not NTP.
+12. Present$\ne$effective: D3 (config present, overridden). Fix lowest layer: D8 (one stalled DHCP → dead DNS, clock, SSH).
+\end{skilla}
+
+\vfill
+\begin{center}\small\itshape\color{dcgray}
+When the Master Exam is effortless, the lab is yours to Black Start — rebuild
+from zero, no manual, no internet. That is the BSL bar the timeline sets.
+\end{center}
+
+\end{document}
